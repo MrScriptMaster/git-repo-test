@@ -13,6 +13,9 @@
 
 ### Примеры
 Гиперссылка: [GitHub](https://ru.wikipedia.org/wiki/GitHub)
+
 Ссылка на каталог репзоитория: [Docs](docs/)
+
 Ссылка на другой md-файл: [Page 1](docs/page1.md)
+
 Ссылка без надписи: https://ru.wikipedia.org/wiki/GitHub
