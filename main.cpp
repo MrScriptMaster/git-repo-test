@@ -19,4 +19,4 @@ int main(int argc, char* argv[])
 	cout << add(2,2) << endl;
 	return 0;
 }
-// main
+// main func
