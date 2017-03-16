@@ -3,7 +3,8 @@
 using namespace std;
 
 /*
- * Main function
+ * Main function for
+ * nothing to do
  */
 
 int main(int argc, char* argv[])
