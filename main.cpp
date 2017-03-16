@@ -15,5 +15,6 @@ int main(int argc, char* argv[])
 {
 	cout << "Hello, World!" << endl;
 	cout << "Hello everybody" << endl;
+	cout << add(2,2) << endl;
 	return 0;
 }
