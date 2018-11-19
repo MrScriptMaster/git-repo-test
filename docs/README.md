@@ -335,3 +335,23 @@ alt="ALT-ТЕКСТ ИЗОБРАЖЕНИЯ" width="240" height="180" border="10"
 <p class="admonition-title-notice"> Notice</p>
 <p>Text</p>
 </div>
+
+<div style="background-attachment: scroll;background-clip: border-box;background-color: rgb(219, 250, 244);
+        background-image: none;background-origin: padding-box;
+        background-position-x: 0%;background-position-y: 0%;
+        background-repeat-x: ;background-repeat-y: ;background-size: auto;box-sizing: border-box;
+        color: rgb(64, 64, 64);display: block;font-family: Lato, proxima-nova, "Helvetica Neue", Arial, sans-serif;font-size: 14.4px;font-weight: 400;height: 173px;line-height: 24px;margin-bottom: 24px;padding-bottom: 12px;
+        padding-left: 12px;padding-right: 12px;padding-top: 12px;
+        text-size-adjust: 100%;width: 368.812px;-webkit-font-smoothing: antialiased;">
+<p style="background-attachment: scroll;background-clip: border-box;
+        background-color: rgb(26, 188, 156);background-image: none;
+        background-origin: padding-box;background-position-x: 0%;
+        background-position-y: 0%;background-repeat-x: ;background-repeat-y: ;background-size: auto;box-sizing: border-box;color: rgb(255, 255, 255);display: block;
+        font-family: Lato, proxima-nova, "Helvetica Neue", Arial, sans-serif;font-size: 16px;font-style: normal;font-weight: 700;height: 29px;line-height: 16px;margin-bottom: 12px;
+        margin-left: -12px;margin-right: -12px;margin-top: -12px;
+        padding-bottom: 6px;padding-left: 12px;padding-right: 12px;
+        padding-top: 6px;text-size-adjust: 100%;
+        width: 368.812px;-webkit-font-smoothing: antialiased;
+        -webkit-margin-after: 12px;-webkit-margin-before: -12px;-webkit-margin-end: -12px;-webkit-margin-start: -12px;"> Important message</p>
+<p>Text</p>
+</div>
