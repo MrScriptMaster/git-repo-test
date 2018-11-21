@@ -43,6 +43,7 @@ For lists you can use '+', '-' or '*'.
 + [Relative reference to the document](../blob/LICENSE)
 + [Footnote with number][1]
 + Text with footnote [footnote text]
++ [Anchor](#Lists)
  
  
 [Footnote text]: www.google.com
