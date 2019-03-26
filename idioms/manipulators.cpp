@@ -47,6 +47,12 @@ namespace Manips {
         friend BaseStream& operator << (BaseStream&, CIndented&&);
     };
     CIndented Indent(const std::string&);
+    /*
+     * CEndl
+     */
+    class CEndl {};
+    extern CEndl Endl;
+    BaseStream& operator << (BaseStream&, const CEndl&);
 } // namespace Manips
 
 class BaseStream {
@@ -75,6 +81,7 @@ protected:
     friend BaseStream& Manips::operator<< (BaseStream&, const Manips::CElse&);
     friend BaseStream& Manips::operator<< (BaseStream&, const Manips::CEndIf&);
     friend BaseStream& Manips::operator<< (BaseStream&, Manips::CIndented&&);
+    friend BaseStream& Manips::operator<< (BaseStream&, const Manips::CEndl&);
 };
 
 class CustomStream : public BaseStream {
@@ -239,13 +246,13 @@ BaseStream& Manips::operator << (BaseStream& stream, const Manips::CEndIf& EndIf
 // CIndented
 //
 
-BaseStream& Manips::operator<< (BaseStream& stream, Manips::CIndented&& intendedString)
+BaseStream& Manips::operator<< (BaseStream& stream, Manips::CIndented&& input)
 {
     assert(stream.invariant());
     uint curColumn = stream.m_currentColumn;
-    for (size_t i = 0; i < intendedString.m_string.size(); i++)
+    for (size_t i = 0; i < input.m_string.size(); i++)
     {
-        char c = intendedString.m_string[i];
+        char c = input.m_string[i];
         stream << c;
         if (c == '\n') {
             for (size_t j = 0; j < curColumn; j++) {
@@ -262,6 +269,17 @@ Manips::CIndented Manips::Indent(const std::string& inputString)
     return CIndented(inputString);
 }
 
+//
+// CEndl
+//
+
+Manips::CEndl Manips::Endl;
+BaseStream& Manips::operator<< (BaseStream& stream, const Manips::CEndl& endl)
+{
+    stream << '\n';
+    return stream;
+}
+
 // --- cut off ---------------------------------------------------- cut off ---
 
 #include <iostream>
@@ -273,20 +291,20 @@ int main(int argc, char* argv[])
     cout << "--- Start write to file ---" << endl;
     CustomStream TestFile("test.txt");
     TestFile
-        << "Hello, World!" << "\n"
+        << "Hello, World!" << Endl
         << If (true)
-        <<   "Print this 1" << "\n"
+        <<   "Print this 1" << Endl
         << EndIf
         << If (false)
-        <<   "Do not print this" << "\n"
+        <<   "Do not print this" << Endl
         << EndIf
         << If (false)
-        <<    "Do not print this" << "\n"
+        <<    "Do not print this" << Endl
         << Else
-        <<    "Print this 2" << "\n"
+        <<    "Print this 2" << Endl
         << EndIf
-        << "   " << Indent("Alpha\nBeta\nGamma") << "\n"
-        << "Number = " << 15 << "\n";
+        << "   " << Indent("Alpha\nBeta\nGamma") << Endl
+        << "Number = " << 15 << Endl;
 
     cout << "--- End write to file ---" << endl;
     return 0;
