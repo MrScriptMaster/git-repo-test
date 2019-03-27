@@ -20,18 +20,20 @@ namespace Nfstream {
     _fstream_type& operator<< (_fstream_type&, const CIf&);
     _fstream_type& operator<< (_fstream_type&, const CElse&);
     _fstream_type& operator<< (_fstream_type&, const CEndIf&);
-    _fstream_type& operator<< (_fstream_type&, const Indented&);
+    _fstream_type& operator<< (_fstream_type&, Indented&&);
     _fstream_type& operator<< (_fstream_type&, const CEndl&);
     _fstream_type& operator<< (_fstream_type&, const Fill&);
 
     class Indented
     {
         std::string m_string;
+        char m_delimeter;
     public:
-        Indented(const std::string& string)
+        Indented(const std::string& string, const char delim = '\n')
             : m_string(string)
+            ,m_delimeter(delim)
         {}
-        friend _fstream_type& operator<< (_fstream_type&, const Indented&);
+        friend _fstream_type& operator<< (_fstream_type&, Indented&&);
     };
 
     class AFile
@@ -61,7 +63,7 @@ namespace Nfstream {
         friend _fstream_type& operator<< (_fstream_type&, const CIf&);
         friend _fstream_type& operator<< (_fstream_type&, const CElse&);
         friend _fstream_type& operator<< (_fstream_type&, const CEndIf&);
-        friend _fstream_type& operator<< (_fstream_type&, const Indented&);
+        friend _fstream_type& operator<< (_fstream_type&, Indented&&);
         friend _fstream_type& operator<< (_fstream_type&, const CEndl&);
         friend _fstream_type& operator<< (_fstream_type&, const Fill&);
     };
@@ -113,14 +115,15 @@ namespace Nfstream {
     };
 
     const CIf If(bool);
-    Indented Indent(const std::string&);
+    Indented Indent(const std::string&, const char delim = '\n');
     Fill Filler(size_t, char filler = ' ');
 }
 
 // --- cut off ---------------------------------------------------- cut off ---
 
 #include <cstring>
-#include <iostream>
+#include <vector>
+#include <sstream>
 
 using namespace std;
 
@@ -235,9 +238,9 @@ const CIf If (bool cond)
     return CIf(cond);
 }
 
-Indented Indent(const std::string& input)
+Indented Indent(const std::string& input, const char delim)
 {
-    return Indented(input);
+    return Indented(input, delim);
 }
 
 Fill Filler(size_t size, char filler)
@@ -265,13 +268,31 @@ _fstream_type& operator<< (_fstream_type& stream, const CEndIf& _endif)
     return stream;
 }
 
-_fstream_type& operator<< (_fstream_type& stream, const Indented& _ind)
+_fstream_type& operator<< (_fstream_type& stream, Indented&& _ind)
 {
-    uint curColumn = stream.m_currentColumn;
-    string tstr;
-    tstr.resize(curColumn, ' ');
-    tstr += _ind.m_string;
-    stream << tstr.c_str();
+    [] (string& input, size_t indSize, char delim = '\n') {
+        stringstream ss(input);
+        string tstr, space;
+        vector<string> elems;
+        while (getline(ss, tstr, delim)) {
+            elems.push_back(tstr);
+        }
+        tstr.clear();
+        space.resize(indSize, ' ');
+        size_t elemSize = elems.size();
+        if (elemSize > 1)
+        {
+            size_t i = 0;
+            do {
+                tstr += elems[i] + delim + space;
+            } while(++i != elemSize - 1);
+            tstr += elems[elemSize - 1];
+        }
+        else if (elemSize > 0)
+            tstr += elems[elemSize - 1];
+        input = tstr;
+    } (_ind.m_string, stream.m_currentColumn, _ind.m_delimeter);
+    stream << _ind.m_string;
     return stream;
 }
 
@@ -301,8 +322,8 @@ int main(int argc, char* argv[])
 {
     File file("test.txt");
     file 
-        //<< 'c'
-        //<< "Hello, World!" << Endl
+        << 'c'
+        << "Hello, World!" << Endl
         << If (true)
         <<   "Print this 1" << Endl
         << EndIf
@@ -314,6 +335,7 @@ int main(int argc, char* argv[])
         << Else
         <<    "Print this 2" << Endl
         << EndIf
+        << string("Hello again\n   ") 
         << "   " << Indent("Alpha\nBeta\nGamma") << Endl
         << Filler(3,'-') << "Number = " << 15 << Endl;
     return 0;
