@@ -53,7 +53,7 @@ INCLUDES      := ./include ./include/third_party $(OF_INCLUDES) $(FMODEX_INCLUDE
 	$(JSON_INCLUDE) $(KISS_INCLUDE) $(GLM_INCLUDE)
 ADDITIONAL_INCLUDES := `pkg-config gstreamer-app-1.0 --cflags-only-I`
 LFLAGS        := -pthread
-CFLAGS        := -pthread
+CFLAGS        := -w
 DEFINE        := -DGLM_ENABLE_EXPERIMENTAL
 LIBS          := $(OF_LIB_PATH) $(TESS2_LIB_PATH) $(KISS_LIB_PATH)
 L_LIBS        := $(OF_LIB_NAME) $(FMODEX_LIB_PATH) $(TESS2_LIB_NAME) $(KISS_LIB_NAME) \

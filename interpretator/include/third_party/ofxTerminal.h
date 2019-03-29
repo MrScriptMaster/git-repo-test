@@ -32,8 +32,8 @@
 #include <vector>
 #include <iostream>
 
-#define _DEF_FONT_ "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
-#define _DEF_PATH_ "/bin/"
+#define _DEF_FONT_ "font/courier-new-bold.ttf"
+#define _DEF_PATH_ "bin/"
 
 template <class T>
 class Function {
@@ -97,7 +97,7 @@ private:
 	
 public:
 	ofxTerminal();
-	ofxTerminal(T *co, std::string fontpath=_DEF_FONT_, int fontsize=11);
+	ofxTerminal(T *co, std::string fontpath=_DEF_FONT_, int fontsize=14);
 	void setup();
 	
 	void draw(int xOffset=0, int yOffset=-2);
@@ -136,7 +136,7 @@ ofxTerminal<T>::ofxTerminal(T *co, std::string fontpath, int fontsize) {
 
 	//add the only built in function
 	addToDictionary("read");
-	setPS1("? "); //this is the default prompt
+	setPS1("Enter command > "); //this is the default prompt
 	
 	ofEnableAlphaBlending();
 }
@@ -152,7 +152,7 @@ void ofxTerminal<T>::setup() {
 	results.clear();
 	cl = 0;
 	prompt.yOffset = 2;
-	prompt.x = 0;
+	prompt.x = -5;
 	prompt.y = prompt.yOffset;
 	prompt.index = 0;
 	lines.push_back("");
@@ -162,7 +162,7 @@ void ofxTerminal<T>::setup() {
 	PATH = _DEF_PATH_; //hardcode your own path here...
 	spaceOffset = 0;
 	characterOffset = 2;
-	blinkCursor = false;
+	blinkCursor = true;
 	blinker = true;
 	blinkFrequency = 0.5;
 	blinkCounter = 0;
