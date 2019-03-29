@@ -1,3 +1,4 @@
 .vscode/**
 .obj/**
 interpretator/lib/**/linux64/**
+interpretator/.obj/**
