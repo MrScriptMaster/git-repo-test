@@ -338,5 +338,7 @@ int main(int argc, char* argv[])
         << string("Hello again\n   ") 
         << "   " << Indent("Alpha\nBeta\nGamma") << Endl
         << Filler(3,'-') << "Number = " << 15 << Endl;
+    File("test1.txt")
+        << "Hello, world" << Endl;
     return 0;
 }
