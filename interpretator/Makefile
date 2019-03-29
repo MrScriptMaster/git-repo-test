@@ -57,8 +57,9 @@ CFLAGS        := -pthread
 DEFINE        := -DGLM_ENABLE_EXPERIMENTAL
 LIBS          := $(OF_LIB_PATH) $(TESS2_LIB_PATH) $(KISS_LIB_PATH)
 L_LIBS        := $(OF_LIB_NAME) $(FMODEX_LIB_PATH) $(TESS2_LIB_NAME) $(KISS_LIB_NAME) \
-	`pkg-config gstreamer-app-1.0 glew x11 glu glfw3 cairo fontconfig --libs` \
-	-ldl -lboost_system -lboost_filesystem
+	`pkg-config gstreamer-app-1.0 gstreamer-video-1.0 glew x11 glu glfw3 cairo fontconfig openal opencv freetype2 assimp --libs` \
+	-ldl -lboost_system -lboost_filesystem -lcurl -luriparser -lgtk-3 -lglut -lfreeimage \
+	-lassimp -lsndfile -lmpg123
 APP_NAME      := application
 RM            := rm -rf
 
