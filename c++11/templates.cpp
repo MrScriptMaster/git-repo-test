@@ -160,6 +160,10 @@
 using namespace std;
 
 namespace ex1 {
+    /*
+     * В этом примере демонстрируется как выбирается реализация функции по метаданным
+     * приходящего в шаблон объекта.
+     */
     struct type1_tag {};
     struct type2_tag {};
     struct type11_tag : public type1_tag {};
@@ -183,6 +187,11 @@ namespace ex1 {
     class Two {
     public:
         typedef type2_tag category;
+    };
+
+    class Three {
+    public:
+        typedef type11_tag category;
     };
 
     template<typename MyType>
@@ -210,12 +219,64 @@ namespace ex1 {
     }
 }
 
+namespace ex2 {
+    /*
+     * В этом примере демонстрируется как по метаданным вычисляется тип объекта,
+     * который приходит через шаблон. Это позволяет перегружать функцию swap,
+     * возможно изменяя общую реализацию.
+     * 
+     * Примечание: обратите внимание, что на практике принято использовать имя
+     * 'value_type' для поля данных, хранящий тип данных.
+     */
+    class One {
+    public:
+        typedef One value_type;
+        One(const char* string)
+            : m_str(string)
+        {}
+        const std::string& getString() const
+        {
+            return m_str;
+        }
+    protected:
+        std::string m_str;
+    };
+    
+    template <typename MyType>
+    struct mtype_traits {
+        typedef typename MyType::value_type value_type;
+    };
+
+    template<typename mtype_t>
+    void swap(mtype_t& i1, mtype_t& i2)
+    {
+        typename mtype_traits<mtype_t>::value_type
+            tmp = i1;
+            i1 = i2;
+            i2 = tmp;
+    }
+}
+
 int main(int argc, char* argv[]) {
-  
+    //1
+    /*
+     * В этом примере демонстрируется как выбирается реализация по метаданным
+     * приходящего в шаблон объекта.
+     */
+    std::cout << "> Example 1" << std::endl;
     ex1::One o1;
     ex1::Two o2;
+    ex1::Three o3;
     ex1::meta_function<ex1::One>(o1);
     ex1::meta_function(o1);
     ex1::meta_function(o2);
+    ex1::meta_function(o3);
+    //2
+    std::cout << "> Example 2" << std::endl;
+    ex2::One ob1("Alpha"), ob2("Beta");
+    std::cout << "Input: " << ob1.getString() << " <-> " << ob2.getString() << std::endl;
+    ex2::swap(ob1, ob2);
+    std::cout << "Swaped: " << ob1.getString() << " <-> " << ob2.getString() << std::endl;
+
     return 0;
 } 
