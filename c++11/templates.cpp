@@ -156,6 +156,7 @@
 #include <iostream>
 #include <string>
 #include <typeinfo>
+#include <vector>
 
 using namespace std;
 
@@ -257,6 +258,86 @@ namespace ex2 {
     }
 }
 
+namespace ex3 {
+    /*
+     * Метапрограммирование в С++ можно выразить в функциональном стиле. Тогда
+     * для начала следует написать вспомогательные функции.
+     */
+    template<typename It>
+    struct get_value_type {
+        typedef typename It::value_type value_type;
+    };
+    template<typename T>
+    struct get_value_type<T*> {
+        typedef T value_type;
+    };
+    template<typename T>
+    struct get_value_type<const T*> {
+        typedef T value_type;
+    };
+    
+    // Примеры
+    /*
+     * It - итератор
+     */
+    /*
+     * Примечание:
+     * обратите внимание, что извлекать тип приходящего объекта всегда следует
+     * опосредованно. Здесь мы применили структуру get_value_type, но мы могли
+     * бы определить и *_traits структуру.
+     * 
+     * Это объясняется тем, что мы используем псевдоним типа value_type, что отвязывает
+     * нас от конкретных имен метаданных для других объектов. В нашем случае
+     * имя метатипа It::value_type, но никто не запрещает использовать, например,
+     * It::value_data.
+     */
+    template<typename It, typename T>
+    typename get_value_type<It>::value_type
+    accumulate(It first, It last, T init) {
+        typename get_value_type<It>::value_type result = init;
+        for (; first != last; ++first) {
+            result += *first;
+        }
+    }
+
+    /*
+     * Следущий шаблон повторяет стандартный STL шаблон enable_if, который
+     * возвращает тип только если условие истинно.
+     */
+    template<bool Condition, typename T = void> struct enable_if;
+    template<typename T> struct enable_if<true, T> { typedef T type; };
+    template<typename T> struct enable_if<false, T> {};
+    
+    // Используя этот шаблон, можно например реализовать операцию возведения 
+    //в степень на стадии компиляции.
+    
+    // Возведение в отрицательную степень
+    template<int N, typename T>
+    typename enable_if<(N < 0), T>::type
+    pow(T x) { 
+        return 1 / pow<-N>(x);
+    }
+    // Возведение в нулевую степень
+    template<int N, typename T>
+    typename enable_if<(N == 0), T>::type
+    pow(T x) {
+        return 1;
+    }
+    // Возведение в четную степень
+    template<int N, typename T>
+    typename enable_if<(N > 0) && (N % 2 == 0), T>::type
+    pow(T x) {
+        T p = pow<N / 2>(x);
+        return p * p;
+    }
+    // Возведение в нечетную степень
+    template<int N, typename T>
+    typename enable_if<(N > 0) && (N % 2 != 0), T>::type
+    pow(T x) {
+        return pow<N - 1>(x) * x;
+    }
+}
+
 int main(int argc, char* argv[]) {
     //1
     /*
@@ -277,6 +358,15 @@ int main(int argc, char* argv[]) {
     std::cout << "Input: " << ob1.getString() << " <-> " << ob2.getString() << std::endl;
     ex2::swap(ob1, ob2);
     std::cout << "Swaped: " << ob1.getString() << " <-> " << ob2.getString() << std::endl;
+    //3
+    // Пример метафункции accumulate, которая складывает значения в контейнере
+    std::vector<float> v = { 0.5, 0.5, 1.5 };
+    std::cout << ex3::accumulate(v.begin(), v.end(), 0.f) << std::endl;
+    std::cout << ex3::accumulate(v.begin(), v.end(), 0) << std::endl;
 
+    //double a = ex3::pow<2>(2.);
+    //std::cout << ex3::pow<-2>(2) << std::endl;
+    std::cout << ex3::pow<0>(2) << std::endl;
+    //std::cout << ex3::pow<-1>(2) << std::endl;
     return 0;
 } 
