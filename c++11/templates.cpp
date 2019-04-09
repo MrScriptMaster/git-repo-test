@@ -25,6 +25,18 @@
  *      используются общеизвестные договоренности, которые облегчает понимание метапрограмм.
  * 
  * ## Основы
+ * ### Обзор
+ * Возможности метапрограммирования обладают вычислительной полнотой. Это означает,
+ * что вы можете использовать арифметические операции, организовывать циклы и ветвления.
+ * 
+ * Поначалу обычные конструкции могут показаться непривычными:
+ *     - циклы организуются через рекурсию;
+ *     - ветвления организуются через специализацию шаблонных классов;
+ *     - шаблоны являются подобием функций: параметры шаблонов являются параметрами функции;\n
+ *       вложенные типы и значения перечислений являются выходными параметрами;
+ *     - входными параметрами шаблонов могут быть константные значения типов;\n
+ *       типы и указатели.
+ * 
  * ### Шаблоны-характеристики
  * Данные, которыми манипулирует компилятор, называются "метаданными". Метаданные принято разделять на "типы" и "не типы".
  * Метатипы применяются так же как и обычные типы, но только в метапрограмме. Текущая практика рекомендует, чтобы шаблоны-типы
@@ -159,6 +171,61 @@
 #include <vector>
 
 using namespace std;
+
+namespace basic {
+    /*
+     * Простая метафункция
+     */
+    // Первичный шаблон - самая простая часть метапрограммы
+    template
+    <
+        unsigned PWR,
+        unsigned BASE = 10
+    > struct power
+    {
+        enum { value = BASE * power<PWR-1, BASE>::value };
+    };
+    // Специализация шаблона. В данном случае он нужен, чтобы завершить рекурсию.
+    template<unsigned BASE>
+    struct power<0, BASE>
+    {
+        enum { value = 1 };
+    };
+    /* Примечание:
+     *  Этот шаблон можно использовать для представления коэффициентов, кратных
+     *  BASE.
+     */
+
+    /*
+     * Работа с типами
+     */
+    template
+    <
+        bool condition,
+        typename type_if_true,
+        typename type_if_false
+    > struct type_selector
+    {
+        typedef type_if_true type;
+    };
+    template<typename type_if_true, typename type_if_false>
+    struct type_selector<0, type_if_true, type_if_false>
+    {
+        typedef type_if_false type;
+    };
+
+    template
+    <
+        typename value_type
+    > struct Param
+    {
+        typedef typename type_selector<
+            (sizeof(value_type*) < sizeof(value_type)),
+            const value_type&,
+            value_type
+        >::type type;
+    };
+}
 
 namespace ex1 {
     /*
@@ -338,7 +405,105 @@ namespace ex3 {
     }
 }
 
+namespace ex4 {
+    /*
+     * В этом примере показано, как передается указатель на функцию.
+     */
+    typedef void (*CALLBACK_FUNCTION)();
+
+    template<CALLBACK_FUNCTION cb_func>
+    void callback()
+    {
+        cb_func();
+    }
+
+    void example_callback() {
+        std::cout << "Hello" << std::endl;
+    }
+}
+
+namespace ex5 {
+    /*
+     * На основе шаблонов можно реализовать паттерн проектирования "Стратегия".
+     */
+
+    /*
+     * Стратегия, где условия передаются через параметры шаблонов
+     */
+
+    enum ParamSet_1 {
+        Option_1,
+        Option_2
+    };
+    enum ParamSet_2 {
+        Option_3,
+        Option_4,
+        Option_5
+    };
+
+    enum DEV_ID {
+        dev1,
+        dev2,
+        dev3
+    };
+
+    template
+    <
+       ParamSet_1 p1 = Option_1,
+       ParamSet_2 p2 = Option_4
+    > struct super_parameter_1;
+
+    template
+    <
+       ParamSet_1 p1 = Option_2,
+       ParamSet_2 p2 = Option_5
+    > struct super_parameter_2;
+    
+
+    template
+    <
+        DEV_ID id,
+        typename param_1 = super_parameter_1<>,
+        typename param_2 = super_parameter_2<>
+    > struct strategy {
+        static void init() { std::cout << "Init strategy" << std::endl; }
+    };
+
+    typedef strategy <
+        dev1,
+        super_parameter_1<Option_1,Option_4>,
+        super_parameter_2<>
+    > strategy_1;
+    
+    /*
+     * Стратегия через наследование
+     */
+    struct Strategy_1 {
+        void use() { std::cout << "Strategy 1" << std::endl; }
+    };
+    struct Strategy_2 {
+        void use() { std::cout << "Strategy 2" << std::endl; }
+    };
+
+    template<class concrete_strategy>
+    class Client : public concrete_strategy
+    {
+    public:
+        void useStrategy() {
+            this->use();
+        }
+    };
+}
+
 int main(int argc, char* argv[]) {
+    //0
+    std::cout << basic::power<5>::value << std::endl;
+    /*
+     * В следующем примере, в зависимости от размера типа, мы получим либо
+     * константную ссылку (если размер типа больше размера ссылки на него), либо имя типа.
+     */
+    typename basic::Param<short>::type var = 1024;
+    std::cout << var << std::endl;
     //1
     /*
      * В этом примере демонстрируется как выбирается реализация по метаданным
@@ -367,6 +532,14 @@ int main(int argc, char* argv[]) {
     //double a = ex3::pow<2>(2.);
     //std::cout << ex3::pow<-2>(2) << std::endl;
     std::cout << ex3::pow<0>(2) << std::endl;
-    //std::cout << ex3::pow<-1>(2) << std::endl;
+    //std::cout << ex3::pow<2>(2) << std::endl;
+    //4
+    ex4::callback<ex4::example_callback>();
+    //5
+    ex5::strategy_1::init();
+    ex5::Client<ex5::Strategy_1> s1;
+    ex5::Client<ex5::Strategy_2> s2;
+    s1.useStrategy();
+    s2.useStrategy();
     return 0;
 } 
