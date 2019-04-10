@@ -169,6 +169,7 @@
 #include <string>
 #include <typeinfo>
 #include <vector>
+#include <initializer_list>
 
 using namespace std;
 
@@ -495,6 +496,78 @@ namespace ex5 {
     };
 }
 
+namespace ex6 {
+    /* Вариативные шаблоны
+     * Это такие шаблоны, которых число параметров заранее неизвестно. Все
+     * параметры варитивного шаблона принято называть "пакетом параметров".
+     * 
+     * В одном шаблоне класса/псевдонима/переменной должно быть не больше одного пакета параметров. Если он
+     * есть, то он должен стоять в объявлении шаблона всегда последним.
+     * 
+     * В шаблонной функции пакетов может быть несколько, и стоять они могут
+     * в любом порядке.
+     * 
+     * Для всего пакета, начиная с С++11 можно применять sizeof..., а с С++17
+     * можно применять операцию свертки и распаковку.
+     */
+
+    // Вариативный шаблон объявляется так
+    template<typename ...Types> struct _var_template;
+    template<int ...Types> struct _var_template_1;
+    template<typename ...Args> void _var_func(Args ... args) {}
+
+    /*
+     * Три точки в вариативном шаблоне мы будем называть пакетом, а литерал,
+     * стоящий после этих точек - именем пакета. Любой пакет можно распаковать.
+     * Чтобы распаковать пакет, нужно написать имя пакета и три точки после
+     * имени.
+     */
+    template<typename ...Types>
+    class Unpacking /*: public Types ...*/
+    {
+    public:
+        typedef Unpacking<Types... > type_1;
+        typedef Unpacking<Types*...> type_2;
+        static void foo(const Types&... args)
+        {
+            std::initializer_list<int> elems {
+                (std::cout << args << std::endl, 0)...
+            };
+        }
+        void operator()(const Types&... args)
+        {
+            foo(args...);
+        }
+        explicit Unpacking()
+            /*: Types()...*/
+        {} 
+    };
+    /*
+     * Если мы специфицируем шаблон например так
+     * 
+     *   Unpacking<int, char, double> example;
+     * 
+     * то класс шаблон развернется в таком виде
+     * 
+     * template<>
+     * class Unpacking : public int, public char, public double
+     * {
+     *      typedef<int, char, double> type_1;
+     *      typedef<int*, char*, double*> type_2;
+     *      static void foo(int& args1, char& args2, double& args3)
+     *      {...}
+     *      void operator()(int args1, char args2, double args3)
+     *      {
+     *         foo(&args1, &args2. &args3);
+     *      }
+     *      explicit Unpacking()
+     *       : int(), char(), double()
+     *      {}
+     * };
+     * 
+     */
+}
+
 int main(int argc, char* argv[]) {
     //0
     std::cout << basic::power<5>::value << std::endl;
@@ -541,5 +614,9 @@ int main(int argc, char* argv[]) {
     ex5::Client<ex5::Strategy_2> s2;
     s1.useStrategy();
     s2.useStrategy();
+    //6
+    ex6::Unpacking<int, char, double> example;
+    double pi = 3.1415;
+    example(15, 'f', pi);
     return 0;
 } 
