@@ -169,7 +169,7 @@
 #include <string>
 #include <typeinfo>
 #include <vector>
-#include <initializer_list>
+#include <tuple>
 
 using namespace std;
 
@@ -525,21 +525,17 @@ namespace ex6 {
     template<typename ...Types>
     class Unpacking /*: public Types ...*/
     {
+        void (*m_printer)(const Types&...);
     public:
         typedef Unpacking<Types... > type_1;
         typedef Unpacking<Types*...> type_2;
-        static void foo(const Types&... args)
-        {
-            std::initializer_list<int> elems {
-                (std::cout << args << std::endl, 0)...
-            };
-        }
         void operator()(const Types&... args)
         {
-            foo(args...);
+            m_printer(args...);
         }
-        explicit Unpacking()
+        explicit Unpacking(void (*printer)(const Types&...))
             /*: Types()...*/
+            : m_printer(printer)
         {} 
     };
     /*
@@ -615,7 +611,12 @@ int main(int argc, char* argv[]) {
     s1.useStrategy();
     s2.useStrategy();
     //6
-    ex6::Unpacking<int, char, double> example;
+    struct Printer {
+        static void print(const int& a, const char& b, const double& c) {
+            std::cout << a << " " << b << " " << c << std::endl;
+        }
+    };
+    ex6::Unpacking<int, char, double> example(Printer::print);
     double pi = 3.1415;
     example(15, 'f', pi);
     return 0;
