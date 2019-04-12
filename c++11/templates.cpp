@@ -170,14 +170,22 @@
 #include <typeinfo>
 #include <vector>
 #include <tuple>
+#include <type_traits>
 
 using namespace std;
 
 namespace basic {
     /*
      * Простая метафункция
+     * 
+     * Обычно метафункции состоят из двух частей: первичных шаблонов и их
+     * специализаций. Количество специализаций и их структура зависит от того,
+     * что выполняет метафункция.
+     * 
+     * Обычно специализированные шаблоны выполняют задачи ветвления и останавливают
+     * рекурсивный вызов метафункций.
      */
-    // Первичный шаблон - самая простая часть метапрограммы
+    // Первичный шаблон - основная часть метапрограммы
     template
     <
         unsigned PWR,
@@ -199,6 +207,8 @@ namespace basic {
 
     /*
      * Работа с типами
+     * 
+     * 
      */
     template
     <
@@ -589,6 +599,47 @@ namespace ex6 {
     }
 }
 
+namespace ex7 {
+    /*
+     * Библиотека STL хранит набор шаблонов для поддержки traits-шаблонов. При
+     * написании собственных traits шаблонов рекомендуется использовать
+     * <type_traits> библиотеку STL для переносимости приложения.
+     * 
+     * Особенности:
+     *  - все шаблоны являются constexpr конструкциями, т.е. вычисляются на этапе компиляции.
+     *  - большинство шаблонов имеют constexpr operator(), который позволяет немного упростить использование шаблонов.
+     */
+
+    // Вспомогательные шаблоны
+    
+    // Константа времени компиляции
+    /*
+     * Использование std::integral_constant позволяет делать шаблоны более
+     * структурированными. Константы аналогичны их объявлению так
+     *      
+     *      static Type value = val;
+     *      или
+     *      std::integral_constant<Type,val>;
+     */
+    typedef std::integral_constant<short, 1> constant;
+
+    template <unsigned n>
+    struct factorial : std::integral_constant<int,n * factorial<n-1>::value> {};
+    template <>
+    struct factorial<0> : std::integral_constant<int,1> {};
+    // В type_traits объявлено две константы времени компиляции для условных операций:
+    //   - typedef integral_constant<bool,true> true_type;
+    //   - typedef integral_constant<bool,false> false_type;
+
+    // Проверка типов
+    /*
+     * На этапе компиляции можно делать проверки типов
+     */
+    // void type_traits() {
+
+    // }
+}
+
 int main(int argc, char* argv[]) {
     //0
     std::cout << basic::power<5>::value << std::endl;
@@ -645,5 +696,10 @@ int main(int argc, char* argv[]) {
     double pi = 3.1415;
     example(15, 'f', pi);
     ex6::rprint("aaa", 15, 6.358, 'a');
+    //7
+    // Константы времени компиляции
+    std::cout << ex7::factorial<3>::value      << std::endl;
+    std::cout << std::true_type::value << " " << std::false_type::value << std::endl;
+    std::cout << ex7::constant::value << std::endl;
     return 0;
 } 
