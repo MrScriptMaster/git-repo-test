@@ -3,6 +3,7 @@
  * @author Grigory Okhmak (ohmak88@yandex.ru)
  * @details 
  * В этом файле показаны некоторые общие приемы работы со строками.
+ * Компилируйте этот файл с флагом --std=c++17 или --std=gnu++17.
  * @version 0.1
  * @date 2019-07-03
  * 
@@ -10,6 +11,10 @@
  */
 
 #include <iostream>
+#include <fstream>
+#include <iterator>
+#include <iomanip>
+#include <vector>
 #include <string>
 #include <algorithm>
 #include <cctype>
@@ -68,6 +73,98 @@ string_view& fast_trim(string_view&& v, eSide where = eSURROUND)
     return v;
 }
 
+/*
+ * Другой часто встречающейся задачей является токенизация входящего потока строк.
+ * Не важно какой поток вы будете использовать, так как в STL работа с ними похожа. Мы
+ * рассмотрим пример, когда пользователь вводит строку, в которой используется разделитель
+ * в виде запятой (по умолчанию). Мы задействуем стандартный поток ввода, чтобы обрабатывать
+ * строку.
+ */
+
+void parse_input_stream(char delim = ',')
+{
+    cout << "Please type something. Delimeter = '" << delim << "'" << endl;
+    for (string s; getline(cin >> ws, s, delim);)
+    {
+        if(s.empty()) break;
+        cout << "Parsed line: \"" << s << "\"" << endl;
+    }
+    /*
+     * Чтобы завершить ввод, нужно ввести два раза подряд разделитель.
+     * Если во время ввода вы нажмете Enter, то обработается порция данных,
+     * кроме самого последнего введенного значения, если вы не введете после него разделитель.
+     * 
+     * Манипулятор ws для потока cin позволяет отбрасывать начальные пробелы очередного токена.
+     */
+}
+
+/*
+ * На практике часто нужно обрабатывать входные файлы с текстовым наполнением. Типовой задачей
+ * является подсчет слов в тексте. Важно в этом примере увидеть не как считать слова, а как можно
+ * использовать потоки ввода для разбиения большого текста на смысловые части.
+ */
+
+template<typename T>
+auto get_count_executor(T& inpStream) {
+    return [](T& inpStream) -> size_t {
+        return distance(istream_iterator<string>{inpStream}, {});
+        /*
+         * distance принимает два итератора и возвращает число перемещений с первого
+         * на второй. В данном случае количество слов подсчитывается за счет того,
+         * что мы передаем итератор потока, который начинает с начала потока, и вторым
+         * аргументом итератор end. Так как итератор istream_iterator однонаправленный,
+         * получается, что своим перемещением он посчитает количество слов.
+         */
+    };
+}
+
+void word_counter(int argc, char* argv[]) {
+    size_t counter = 0;
+    /*
+     * Обратите внимание, что в большинстве случаев следует предоставлять пользователю возможность
+     * выбирать источник ввода. Например, в следующем условии мы проверяем аргументы для программы.
+     * Если пользователь передал что-то аргументом, то мы полагаем, что это файл, иначе используем
+     * стандартный поток ввода.
+     */
+    if (argc == 2) {
+        ifstream ifs {argv[1]};
+        counter = get_count_executor(ifs)(ifs);
+    }
+    else {
+        cout << "Please type text. Press Ctrl+D to stop entering" << endl;
+        counter = get_count_executor(cin)(cin);
+    }
+    cout << "Count result: " << counter << endl;
+}
+
+/*
+ * На практике из стандартного ввода также требуется инициализировать целые структуры.
+ * Обычно для этого перегружают оператор >>.
+ */
+struct city
+{
+    string name;
+    size_t population;
+    double latitude;
+    double longitude;
+};
+
+istream& operator>>(istream& is, city& city) {
+    is >> ws;
+    /*
+     * Формат десериализации:
+     * 
+     * name
+     * population latitude longitude
+     * 
+     */
+    getline(is, city.name);
+    is >> city.population
+       >> city.latitude
+       >> city.longitude;
+       return is;
+}
+
 int main(int argc, char* argv[])
 {
     //1
@@ -89,5 +186,34 @@ int main(int argc, char* argv[])
     char c_str[] {'a', 'b', 'c'};
     cout << "|" << fast_trim(string_view(c_str, sizeof(c_str))) << "|" << endl;
     
+    //3
+    parse_input_stream();
+
+    //4
+    word_counter(argc, argv);
+
+    //5
+    vector<city> vCity;
+    cout << "Cities:" << endl;
+    // Читаем структуры из потока
+    /*
+     * Всю десериализацию структуры выполняет итератор. В случае, если ему это не
+     * удается, то поток переходит в ошибочное состояние, которая останавливает работу
+     * алгоритма copy.
+     */
+    stringstream ss;
+    ss << "Malinovka\n12300 125.21 65.34\n"
+       << "Petrovka 38\n45688 125.5 .44\n"
+       << "Bad format\n"
+       << "Vavilovka 4654 .123 .432";
+    copy(istream_iterator<city>{ss}, {}, back_inserter(vCity));
+    for (const auto &[name, pop, lat, lon] : vCity) {
+        cout << left << setw(15)
+            << name
+            << " population=" << pop
+            << " lat=" << lat
+            << " lon=" << lon << endl;
+    }
+
     return 0;
 }
