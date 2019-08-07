@@ -671,9 +671,9 @@ namespace SpecialIterator {
      * 
      * Автор: Bukov Anton (k06aaa@gmail.com)
      */
-    template<typename Category,     /// категория итератора
-             typename IterType,     /// тип итератора
-             typename T = int>      /// 
+    template<typename Category,               /// категория итератора
+             typename IterType,               /// тип итератора
+             typename T = unsigned char>      /// тип в котором выводятся рассчитанные биты
     class bit_walk_iterator : public std::iterator<Category, T>
     {
     public:
@@ -682,17 +682,17 @@ namespace SpecialIterator {
 
     public:
         bit_walk_iterator()
-            : it(), nextBit(int())
+            : it(), nextBit(int(0))
         {}
 
         bit_walk_iterator(IterType & it)
-            : it(it), nextBit(int())
+            : it(it), nextBit(int(0))
         {}
 
         bit_walk_iterator & operator ++ ()
         {
             nextBit++;
-            if (nextBit == CHAR_BIT*sizeof(typename std::iterator<Category, T>::value_type))
+            if (nextBit == CHAR_BIT /* * sizeof(typename std::iterator<Category, T>::value_type) */)  // Лишнее умножение, если слово имеет размер байта
             {
                 ++it;
                 nextBit = 0;
@@ -759,7 +759,7 @@ namespace SpecialIterator {
             if (nextBit == -1)
             {
                 --it;
-                nextBit = CHAR_BIT*sizeof(typename std::iterator<Category, T>::value_type)-1;
+                nextBit = CHAR_BIT /* * sizeof(typename std::iterator<Category, T>::value_type) */- 1 ; // Лишнее умножение, если слово размером в один байт
             }
             return *this;
         }
@@ -774,7 +774,7 @@ namespace SpecialIterator {
     private:
         bit_walk_iterator & move()
         {
-            int bitsInObject = CHAR_BIT*sizeof(typename std::iterator<Category, T>::value_type);
+            int bitsInObject = CHAR_BIT * sizeof(typename std::iterator<Category, T>::value_type);
 
             if (nextBit < 0)
             {
@@ -991,16 +991,29 @@ int main(int argc, char* argv[])
     char inputBytes[] = "\x0A\x0B\x0A\x0B";
     // Выведем ее по битам
     // 00001010 00001011 00001010 00001011
-    auto it = SpecialIterator::bit_walker(inputBytes);
-    short delimCounter = 0;
-    for (; it != SpecialIterator::bit_walker(inputBytes + 1); ++it)
-    {
-        cout << *it;
-        delimCounter += 1;
-        if (delimCounter % 8 == 0)
-            cout << " ";
+    { // Прямой порядок
+        auto it = SpecialIterator::bit_walker(&inputBytes[0]);
+        short delimCounter = 0;
+        for (; it != SpecialIterator::bit_walker(&inputBytes[4]); it++)
+        {
+            cout << *it;
+            delimCounter += 1;
+            if (delimCounter % 8 == 0)
+                cout << " ";
+        }
+        cout << endl;
     }
-    cout << endl;
-
+    { // Обратный порядок
+        auto it = SpecialIterator::bit_walker(&inputBytes[4]);
+        short delimCounter = 0;
+        for (; it != SpecialIterator::bit_walker(&inputBytes[0]); it--)
+        {
+            cout << *it;
+            delimCounter += 1;
+            if (delimCounter % 8 == 0)
+                cout << " ";
+        }
+        cout << endl;
+    }
     return 0;
 }
