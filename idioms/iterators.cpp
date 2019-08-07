@@ -78,6 +78,8 @@
 #include <memory>
 #include <string>
 #include <climits>
+#include <cstddef>
+#include <utility>
 
 /*
  * В следующем примере мы создадим простейший итератор. Простейший итератор должен поддерживать
@@ -911,8 +913,10 @@ int main(int argc, char* argv[])
      * применять к нему алгоритмы STL.
      */
     CNumRange range(100, 110);
-    auto [minIt, maxIt] (minmax_element(begin(range), end(range)));
-    cout << *minIt << " - " << *maxIt << endl;
+    //auto [minIt, maxIt] (minmax_element(begin(range), end(range)));   // Такая запись пока поддерживается не всеми компиляторами
+    //cout << *minIt << " - " << *maxIt << endl;
+    pair<CNumIterator, CNumIterator> result = minmax_element(begin(range), end(range));
+    cout << *result.first << " - " << *result.second << endl;
 
     //3
     for (auto& elem : CIntArray({1,2,3,4,5,6,7,8,9,10}))
