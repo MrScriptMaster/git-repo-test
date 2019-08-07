@@ -11,7 +11,7 @@
  * написания циклов в стиле foreach, что делает код в целом чище; возможность интеграции вашего
  * контейнера в стандартную библиотеку; единообразие интерфейса с точки зрения стандартной библиотеки.
  * @version 0.1
- * @date 2019-02-05
+ * @date 2019-08-07
  * 
  * @copyright GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007
  */
@@ -36,7 +36,34 @@
  *  Кроме того, итераторы могут быть:
  *  - Итераторы вывода - данные итераторы нельзя читать, а служат они для того, чтобы указывать место,
  *    в которе нужно записать данные. Данные итераторы можно только инкрементировать.
- *  - Изменяемые итераторы - это сочетание итератора вывода с итератором из любой вышеперечисленной категории
+ *  - Изменяемые итераторы - это сочетание итератора вывода с итератором из любой вышеперечисленной категории.
+ * 
+ * Ниже показана таблица операций, которые должны поддерживаться разными категориями итераторов. Более
+ * сильная категория итераторов должна поддерживать операции более слабой.
+ * 
+ * ***************************************************************************************************
+ *   Категория                              Операции
+ * ***************************************************************************************************
+ *   Все итераторы           - Конструктор копирования + оператор присваивания (=)
+ *                           - Левосторонний и правосторонний инкремент (++)
+ * 
+ *   Оператор ввода          - Операторы равно и не равно ( == и != )
+ *                           - Оператор разыменовывания как rvalue (*)
+ *   
+ *   Оператор вывода         Оператор разыменовывания как lvalue (*)
+ * 
+ *   Однонаправленный        Должен поддерживать многопроходность
+ *   итератор
+ * 
+ *   Двунаправленный         Левосторонний и правосторонний декремент (--)
+ *   итератор
+ * 
+ *   Итератор с              - Поддержка операторов сложения и вычитания с целым числом (+ и -)
+ *   произвольным            - Поддержка прочих операций сравнения итераторов (< > <= >=)
+ *   доступом                - Поддержка операторов += и -=
+ *                           - Поддержка разыменовывания по индексу (оператор []).
+ *
+ * ***************************************************************************************************
  */
 
 /*
@@ -49,6 +76,8 @@
 #include <initializer_list>
 #include <algorithm>
 #include <memory>
+#include <string>
+#include <climits>
 
 /*
  * В следующем примере мы создадим простейший итератор. Простейший итератор должен поддерживать
@@ -145,7 +174,6 @@ class CIterator : public std::iterator<std::input_iterator_tag, T>
 {
     friend class CIntArray;
 public:
-    CIterator() : m_ptr(nullptr) {}
     CIterator(const CIterator& it) : m_ptr(it.m_ptr) {}
 
     bool operator!=(const CIterator& other) const {
@@ -211,6 +239,8 @@ namespace SpecialIterator {
      * Итератор, который проходит коллекцию так, как если бы она была отсортирована.
      * При этом реальной сортировки не происходит, т.е. коллекция не изменяется
      * во время итерирования.
+     * 
+     * Автор: Bukov Anton (k06aaa@gmail.com)
      */
     enum eOrder {
         etASCENDING = 0   // сортировка по возрастанию
@@ -225,7 +255,7 @@ namespace SpecialIterator {
     class sort_iterator : public std::iterator<ItCategory,T>
     {
     public:
-        ItType m_begin;         /// итератор на последний элемент
+        ItType m_begin;         /// итератор на первый элемент
         ItType m_end;           /// итератор на последний элемент
         ItType m_prevIter;      /// итератор на текущий элемент
         int    m_index;         /// внутренний индекс для элементов
@@ -261,7 +291,7 @@ namespace SpecialIterator {
                 m_prevIter = m_end;
                 return;
             }
-            // Когда еще не было ни одного прохода, ищем следующий элемент сначала
+            // Когда еще не было ни одного прохода, ищем следующий элемент с начала
             if (m_index == 0)
             {
                 m_prevIter = m_begin;
@@ -301,7 +331,7 @@ namespace SpecialIterator {
                 m_prevIter = m_end;
                 return;
             }
-            // Когда еще не было ни одного прохода, ищем следующий элемент сначала
+            // Когда еще не было ни одного прохода, ищем следующий элемент с начала
             if (m_index == 0)
             {
                 m_prevIter = m_begin;
@@ -472,6 +502,391 @@ namespace SpecialIterator {
                              etASCENDING>(begin,end);
     }
 
+    /*
+     * Полевый итератор
+     * Итератор, который может обойти коллекцию из пользовательских структур по конкретному полю. 
+     * Итератор работает при условии, что поля коллекции лежат в памяти последовательно.
+     * Реализация может быть зависима от размера указателей.
+     * 
+     * Автор: Bukov Anton (k06aaa@gmail.com)
+     */
+
+    /**
+     * @brief Вспомогательный макрос. Выделяет поле структуры, по которому требуется обход,
+     * через вычисление смещения от ее начала.
+     * 
+     * @param Object Имя структуры.
+     * @param field Поле структуры, по которому требуется обход.
+     */
+    #define fieldof(Object,field) (&(((Object*)NULL)->field))
+    
+    template<typename Category,   /// категория итератора
+             typename IterType,   /// тип итератора
+             typename FieldType>  /// тип хранимых в поле данных
+    class field_walk_iterator : public std::iterator<Category, FieldType>
+    {
+    public:
+        IterType it;
+        FieldType* field;
+        
+        field_walk_iterator(FieldType* field)
+            : it(IterType()), field(field)
+        {}
+        field_walk_iterator(IterType& it, FieldType* field)
+            : it(it), field(field)
+        {}
+
+        bool operator != (const field_walk_iterator & rhs) const { return !(*this == rhs); }
+        bool operator == (const field_walk_iterator & rhs) const { return (it == rhs.it);  }
+
+        field_walk_iterator & operator ++ ()
+        {
+            ++it;
+            return *this;
+        }
+
+        field_walk_iterator operator ++ (int) 
+        {
+            field_walk_iterator tmp(*this);
+            operator++();
+            return tmp;
+        }
+
+        FieldType operator * () const
+        {
+            return *(FieldType&)((intptr_t)field) + ((intptr_t)&(*it));
+        }
+
+        FieldType & operator * ()
+        {
+            intptr_t a = (intptr_t)&(*it);
+            intptr_t b = (intptr_t)field;
+            return *(FieldType*)(a + b);
+        }
+
+        field_walk_iterator & operator -- ()
+        {
+            --it;
+            return *this;
+        }
+
+        field_walk_iterator operator -- (int) 
+        {
+            field_walk_iterator tmp(*this);
+            operator--();
+            return tmp;
+        }
+
+        field_walk_iterator & operator += (int n)
+        {
+            it += n;
+            return *this;
+        }
+
+        field_walk_iterator & operator -= (int n)
+        {
+            it -= n;
+            return *this;
+        }
+
+        bool operator < (const field_walk_iterator& der) const
+        {
+            return (it < der.it);
+        }
+
+        bool operator > (const field_walk_iterator& der) const
+        {
+            return (it > der.it);
+        }
+
+        bool operator <= (const field_walk_iterator& der) const
+        {
+            return (it <= der.it);
+        }
+
+        bool operator >= (const field_walk_iterator& der) const
+        {
+            return (it >= der.it);
+        }
+
+        field_walk_iterator operator [] (int n) const
+        {
+            field_walk_iterator tmp(*this);
+            return tmp += n;
+        }
+    };
+
+    // Вспомогательные операторы
+    template<typename Category, typename IterType, typename T>
+    field_walk_iterator<Category,IterType,T> operator + (
+        const field_walk_iterator<Category,IterType,T>& der, int n)
+    {
+        field_walk_iterator<Category,IterType,T> tmp(der);
+        return tmp += n;
+    }
+
+    template<typename Category, typename IterType, typename T>
+    field_walk_iterator<Category,IterType,T> operator + (
+        int n, const field_walk_iterator<Category,IterType,T>& der)
+    {
+        field_walk_iterator<Category,IterType,T> tmp(der);
+        return tmp += n;
+    }
+
+    template<typename Category, typename IterType, typename T>
+    field_walk_iterator<Category,IterType,T> operator - (
+        const field_walk_iterator<Category,IterType,T>& der, int n)
+    {
+        field_walk_iterator<Category,IterType,T> tmp(der);
+        return tmp -= n;
+    }
+
+    template<typename Category, typename IterType, typename T>
+    ptrdiff_t operator - (
+        const field_walk_iterator<Category,IterType,T>& a,
+        const field_walk_iterator<Category,IterType,T>& b)
+    {
+        return (a.it - b.it);
+    }
+
+    template<typename Category, typename IterType, typename T>
+    ptrdiff_t operator - (
+        const field_walk_iterator<Category,IterType,T>& a,
+        const IterType & b)
+    {
+        return (a.it - b);
+    }
+
+    // Вспомогательные функции
+    template<typename IterType, typename T>
+    field_walk_iterator<typename std::iterator_traits<IterType>::iterator_category,IterType,T>
+    field_walker(IterType it, T * field)
+    {
+        return field_walk_iterator<typename std::iterator_traits<IterType>::iterator_category,IterType,T>(it,field);
+    }
+
+    /*
+     * Битовый итератор
+     * Позволяет проходить по битам данных.
+     * 
+     * Автор: Bukov Anton (k06aaa@gmail.com)
+     */
+    template<typename Category,     /// категория итератора
+             typename IterType,     /// тип итератора
+             typename T = int>      /// 
+    class bit_walk_iterator : public std::iterator<Category, T>
+    {
+    public:
+        IterType it;
+        int nextBit;
+
+    public:
+        bit_walk_iterator()
+            : it(), nextBit(int())
+        {}
+
+        bit_walk_iterator(IterType & it)
+            : it(it), nextBit(int())
+        {}
+
+        bit_walk_iterator & operator ++ ()
+        {
+            nextBit++;
+            if (nextBit == CHAR_BIT*sizeof(typename std::iterator<Category, T>::value_type))
+            {
+                ++it;
+                nextBit = 0;
+            }
+            return *this;
+        }
+
+        bit_walk_iterator operator ++ (int) 
+        {
+            bit_walk_iterator tmp(*this);
+            operator++();
+            return tmp;
+        }
+
+        bool operator == (const bit_walk_iterator & rhs) const
+        {
+            return (it == rhs.it) && (nextBit == rhs.nextBit);
+        }
+
+        bool operator != (const bit_walk_iterator & rhs) const
+        {
+            return !(*this == rhs);
+        }
+
+        const T value () const
+        {
+            int byteNumber = nextBit / 8;
+            int bitNumber  = nextBit % 8;
+            char & ch = byteNumber[(char*)&(*it)];
+            if ((*it) & (1 << bitNumber))
+                return 1;
+            return 0;
+        }
+
+        const T operator * () const
+        {
+            return value;
+        }
+
+        bit_walk_iterator & operator * ()
+        {
+            return *this;
+        }
+
+        template<typename TParam>
+        bit_walk_iterator & operator = (TParam x)
+        {
+            int byteNumber = nextBit / 8;
+            int bitNumber  = nextBit % 8;
+            char & ch = byteNumber[(char*)&(*it)];
+            ch &= (-1)^(1 << bitNumber);
+            ch |= ((x?1:0) << bitNumber);
+            return *this;
+        }
+
+        operator T () const
+        {
+            return value();
+        }
+
+        bit_walk_iterator & operator -- ()
+        {
+            nextBit--;
+            if (nextBit == -1)
+            {
+                --it;
+                nextBit = CHAR_BIT*sizeof(typename std::iterator<Category, T>::value_type)-1;
+            }
+            return *this;
+        }
+
+        bit_walk_iterator operator -- (int) 
+        {
+            bit_walk_iterator tmp(*this);
+            operator--();
+            return tmp;
+        }
+
+    private:
+        bit_walk_iterator & move()
+        {
+            int bitsInObject = CHAR_BIT*sizeof(typename std::iterator<Category, T>::value_type);
+
+            if (nextBit < 0)
+            {
+                it -= ((-nextBit) / bitsInObject)
+                      + ((-nextBit) % bitsInObject > 0);
+                nextBit = bitsInObject - ((-nextBit) % bitsInObject);
+            } else
+            if (nextBit > bitsInObject)
+            {
+                it += nextBit / bitsInObject;
+                nextBit %= bitsInObject;
+            }
+        
+            return *this;
+        }
+
+    public:
+        bit_walk_iterator & operator += (int n)
+        {
+            nextBit += n;
+            return move();
+        }
+
+        bit_walk_iterator & operator -= (int n)
+        {
+            nextBit -= n;
+            return move();
+        }
+
+        bool operator < (const bit_walk_iterator & der) const
+        {
+            return (it < der.it);
+        }
+
+        bool operator > (const bit_walk_iterator & der) const
+        {
+            return (it > der.it);
+        }
+
+        bool operator <= (const bit_walk_iterator & der) const
+        {
+            return (it <= der.it);
+        }
+
+        bool operator >= (const bit_walk_iterator & der) const
+        {
+            return (it >= der.it);
+        }
+
+        bit_walk_iterator operator [] (int n) const
+        {
+            bit_walk_iterator tmp(*this);
+            return tmp += n;
+        }
+    };
+
+    // Вспомогательные операторы
+    template<typename Category, typename IterType, typename T>
+    bit_walk_iterator<Category,IterType,T> operator + (
+        const bit_walk_iterator<Category,IterType,T> & der, int n)
+    {
+        bit_walk_iterator<Category,IterType,T> tmp(der);
+        return tmp += n;
+    }
+
+    template<typename Category, typename IterType, typename T>
+    bit_walk_iterator<Category,IterType,T> operator + (
+        int n, const bit_walk_iterator<Category,IterType,T> & der)
+    {
+        bit_walk_iterator<Category,IterType,T> tmp(der);
+        return tmp += n;
+    }
+
+    template<typename Category, typename IterType, typename T>
+    bit_walk_iterator<Category,IterType,T> operator - (
+        const bit_walk_iterator<Category,IterType,T> & der, int n)
+    {
+        bit_walk_iterator<Category,IterType,T> tmp(der);
+        return tmp -= n;
+    }
+
+    template<typename Category, typename IterType, typename T>
+    ptrdiff_t operator - (
+        const bit_walk_iterator<Category,IterType,T> & a,
+        const bit_walk_iterator<Category,IterType,T> & b)
+    {
+        return (a.it - b.it) + (a.nextBit - b.nextBit);
+    }
+
+    template<typename Category, typename IterType, typename T>
+    ptrdiff_t operator - (
+        const bit_walk_iterator<Category,IterType,T> & a,
+        const IterType & b)
+    {
+        return (a.it - b.it)*CHAR_BIT*sizeof(typename std::iterator<Category, T>::value_type)
+             + (CHAR_BIT*sizeof(typename std::iterator<Category, T>::value_type) - a.nextBit);
+    }
+
+    // Вспомогательные функции
+    template<typename T, typename IterType>
+    bit_walk_iterator<typename std::iterator_traits<IterType>::iterator_category,IterType,T>
+    bit_walker(IterType it)
+    {
+        return it;
+    }
+
+    template<typename IterType>
+    bit_walk_iterator<typename std::iterator_traits<IterType>::iterator_category,IterType,int>
+    bit_walker(IterType it)
+    {
+        return it;
+    }
 }
 
 // --- cut off ---------------------------------------------------- cut off ---
@@ -527,6 +942,65 @@ int main(int argc, char* argv[])
     //     }
     //     cout << endl;
     // }
+
+    //5
+    /*
+     * Положим, что у нас есть структура, работников предприятия.
+     */
+    struct Emploee {
+        int      number;
+        string   lastName;
+        string   firstName;
+        long     salary;
+    };
+
+    ptrdiff_t ss;
+    Emploee AcmeContractors[] =
+    {
+        {25433, "Bunny", "Bugs" , 2000},
+        {31200, "Duck",  "Duffy", 2500},
+        {62310, "Pig" ,  "Porky", 1900}
+    };
+    size_t acmeSize = sizeof AcmeContractors / sizeof *AcmeContractors;
+    {   // Выводим всех сотрудников по фамилиям
+        auto it = SpecialIterator::field_walker(AcmeContractors, fieldof(Emploee, lastName));
+        for (; it != SpecialIterator::field_walker(AcmeContractors + acmeSize, fieldof(Emploee, lastName)); ++it)
+        {
+            cout << *it << endl;
+        }
+    }
+    {   // Выводим всех сотрудников по именам
+        auto it = SpecialIterator::field_walker(AcmeContractors, fieldof(Emploee, firstName));
+        for (; it != SpecialIterator::field_walker(AcmeContractors + acmeSize, fieldof(Emploee, firstName)); ++it)
+        {
+            cout << *it << endl;
+        }
+    }
+    {   // Выводим всех сотрудников по зарплатам
+        auto it = SpecialIterator::field_walker(AcmeContractors, fieldof(Emploee, salary));
+        for (; it != SpecialIterator::field_walker(AcmeContractors + acmeSize, fieldof(Emploee, salary)); ++it)
+        {
+            cout << *it << endl;
+        }
+    }
+
+    //6
+    // TODO: пофиксить ошибки в алгоритме
+    /* Допустим дана такая четырехбайтовая последовательность
+     */
+    char inputBytes[] = "\x0A\x0B\x0A\x0B";
+    // Выведем ее по битам
+    // 00001010 00001011 00001010 00001011
+    auto it = SpecialIterator::bit_walker(inputBytes);
+    short delimCounter = 0;
+    for (; it != SpecialIterator::bit_walker(inputBytes + 1); ++it)
+    {
+        cout << *it;
+        delimCounter += 1;
+        if (delimCounter % 8 == 0)
+            cout << " ";
+    }
+    cout << endl;
 
     return 0;
 }
