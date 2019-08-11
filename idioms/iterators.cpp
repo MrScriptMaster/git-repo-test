@@ -80,6 +80,7 @@
 #include <climits>
 #include <cstddef>
 #include <utility>
+#include <vector>
 
 /*
  * В следующем примере мы создадим простейший итератор. Простейший итератор должен поддерживать
@@ -256,120 +257,77 @@ namespace SpecialIterator {
         eOrder order = etASCENDING  >    /// порядок сортировки
     class sort_iterator : public std::iterator<ItCategory,T>
     {
+        int    m_curPos;
+        std::vector<typename std::iterator<ItCategory, T>::value_type>
+               m_sortedCache;
     public:
         ItType m_begin;         /// итератор на первый элемент
         ItType m_end;           /// итератор на последний элемент
         ItType m_prevIter;      /// итератор на текущий элемент
-        int    m_index;         /// внутренний индекс для элементов
-
+        
         sort_iterator()
         : m_begin(ItType())
         ,m_end(ItType())
         ,m_prevIter(ItType())
-        ,m_index(0)
+        ,m_curPos(0)
         {}
         sort_iterator(const ItType& begin, const ItType& end)
         :m_begin(begin)
         ,m_end(end)
         ,m_prevIter(ItType())
-        ,m_index(0)
+        ,m_curPos(0)
         {
             if (m_begin == m_end)
             {
                 m_prevIter = m_end;
                 return;
             }
-            if (order == etASCENDING)
-                makeSortStepForward();
-            else
-                makeSortStepBackward();            
+            for (auto it = m_begin; it != m_end; ++it)
+            {
+                m_sortedCache.emplace_back(*it);
+            }
+            if (0 == std::is_sorted(m_sortedCache.begin(), m_sortedCache.end()))
+            {
+                if (order == etASCENDING)
+                    std::sort(
+                        m_sortedCache.begin(), m_sortedCache.end(),
+                        [](const typename std::iterator<ItCategory, T>::value_type& lhs,
+                        const typename std::iterator<ItCategory, T>::value_type& rhs)
+                        {
+                            return lhs < rhs;
+                        }
+                    );
+                else
+                    std::sort(
+                        m_sortedCache.begin(), m_sortedCache.end(),
+                        [](const typename std::iterator<ItCategory, T>::value_type& lhs,
+                        const typename std::iterator<ItCategory, T>::value_type& rhs)
+                        {
+                            return lhs > rhs;
+                        }
+                    );
+                    
+            }
+            m_prevIter = std::find(m_begin, m_end, m_sortedCache[m_curPos]);
         }
     private:
-        void makeSortStepForward()
+        ItType findNextElement()
         {
-            // Если достигли конца контейнера
-            if (m_index == m_end - m_begin)
-            {
-                m_prevIter = m_end;
-                return;
-            }
-            // Когда еще не было ни одного прохода, ищем следующий элемент с начала
-            if (m_index == 0)
-            {
-                m_prevIter = m_begin;
-                for (ItType it = m_begin; it != m_end; ++it)
-                    if (*it < *m_prevIter) m_prevIter = it;
-            }
-            // иначе ищем следующий элемент, опираясь на найденный ранее
+            if (m_curPos >= m_sortedCache.size())
+                return m_end;
+            ItType resutlIt = std::find(m_begin, m_end, m_sortedCache[m_curPos+1]);
+            if (resutlIt != m_end)
+                m_curPos = std::find(m_sortedCache.begin(), m_sortedCache.end(), *resutlIt) - m_sortedCache.begin();
             else
             {
-                ItType minValueIter = m_begin;
-                for (ItType it = m_begin; it != m_end; ++it)
-                {
-                    if (*m_prevIter < *it)
-                    {
-                        if (*it < *minValueIter)
-                            minValueIter = it;
-                    }
-                    else if (*m_prevIter == *it)
-                    {
-                        if (*m_prevIter < *it)
-                        {
-                            minValueIter = it;
-                            break;
-                        }
-                    }
-                }
-                m_prevIter = minValueIter;
+                m_curPos = m_sortedCache.size();
             }
-            m_index++;
-        }
-
-        void makeSortStepBackward()
-        {
-            // Если достигли конца контейнера
-            if (m_index == m_end - m_begin)
-            {
-                m_prevIter = m_end;
-                return;
-            }
-            // Когда еще не было ни одного прохода, ищем следующий элемент с начала
-            if (m_index == 0)
-            {
-                m_prevIter = m_begin;
-                for(ItType it = m_begin; it != m_end; ++it)
-                    if (*m_prevIter < *it) m_prevIter = it;
-            }
-            // иначе ищем следующий элемент, опираясь на найденный ранее
-            else
-            {
-                ItType maxValueIter = m_begin;
-                for (ItType it = m_begin; it != m_end; ++it)
-                {
-                    if (*it < *m_prevIter)
-                    {
-                        if (*maxValueIter == *m_prevIter)
-                            maxValueIter = it;
-                        else if (*maxValueIter < *it)
-                            maxValueIter = it; 
-                    }
-                    else if (*m_prevIter == *it)
-                    {
-                        if (*it < *m_prevIter)
-                        {
-                            maxValueIter = it;
-                            break;
-                        }
-                    }
-                }
-                m_prevIter = maxValueIter;
-            }
-            m_index--;
+            return resutlIt;
         }
 
     public: /* Методы итератора */
         bool operator== (const sort_iterator& rhs) const { return (m_prevIter == rhs.m_prevIter); }
-        bool operator== (const ItType& rhs) const { return (m_begin + m_index == rhs); }
+        bool operator== (const ItType& rhs) const { return (m_begin + m_curPos == rhs); }
         bool operator!= (const sort_iterator& rhs) const { return !(*this == rhs); }
         bool operator!= (const ItType& rhs) const { return !(*this == rhs); }
         
@@ -378,10 +336,7 @@ namespace SpecialIterator {
 
         sort_iterator& operator++ ()
         {
-            if (order == etASCENDING)
-                makeSortStepForward();
-            else
-                makeSortStepBackward();
+            m_prevIter = findNextElement();
             return *this;
         }
 
@@ -394,10 +349,7 @@ namespace SpecialIterator {
         
         sort_iterator & operator-- ()
         {
-            if (order == etASCENDING)
-                makeSortStepBackward();
-            else
-                makeSortStepForward();
+            m_prevIter = findNextElement();
             return *this;
         }
 
@@ -929,7 +881,16 @@ int main(int argc, char* argv[])
     int input[]  = { 9,4,6,5,2,1 };
     size_t size = sizeof input / sizeof *input;
     {
-        auto it = SpecialIterator::sorter<SpecialIterator::etASCENDING>(input, input + size + 1);
+        auto it = SpecialIterator::sorter<SpecialIterator::etASCENDING>(input, input + size);
+        cout << "Test array [size=" << size << "]" << endl;
+        for (; it != it.m_end; ++it)
+        {
+            cout << *it << " ";
+        }
+        cout << endl;
+    }
+    { 
+        auto it = SpecialIterator::sorter<SpecialIterator::etDESCENDING>(input, input + size);
         cout << "Test array [size=" << size << "]" << endl;
         for (; it != it.m_end; it++)
         {
@@ -937,15 +898,6 @@ int main(int argc, char* argv[])
         }
         cout << endl;
     }
-    // { // НЕ РАБОТАЕТ !!!
-    //     auto it = SpecialIterator::sorter<SpecialIterator::etDESCENDING>(input, input + size);
-    //     cout << "Test array [size=" << size << "]" << endl;
-    //     for (; it != it.m_end; it++)
-    //     {
-    //         cout << *it << " ";
-    //     }
-    //     cout << endl;
-    // }
 
     //5
     /*
