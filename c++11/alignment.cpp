@@ -285,6 +285,23 @@ void test_reverse_nums()
     std::cout << "Test 1: " << reverse_int(iNumber) << std::endl;
 }
 
+void print_dump(const char* startAddr, size_t size)
+{
+    short columnSize = 3, i = 0;
+    printf("printing dump (sizeof=%ld):\n", size);
+    printf("%08X:   ", startAddr);
+    for (char* addr = (char*)startAddr; addr < (startAddr + size); addr++)
+    {
+        if (i > columnSize) {
+            printf("\n%08X:   ", addr);
+            i = 0;
+        }
+        printf("%08X ", *addr);
+        i++;
+    }
+    printf("\n");
+}
+
 int main(int argc, char* argv[])
 {
     //1
@@ -305,5 +322,8 @@ int main(int argc, char* argv[])
     test_4.print();
     data_test_5 test_5;
     test_5.print();
+    //3
+    print_dump((const char*)&test_1, sizeof test_1);
+    print_dump((const char*)&test_4, sizeof test_4);
     return 0;
 }
