@@ -155,6 +155,21 @@ assert_not_empty_string() {
         die "\"$1\" must not be empty"
     fi
 }
+assert_not_empty_string_1() {
+    if [[ -z $2 ]]; then
+        die "$1"
+    fi
+}
+assert_file_must_exist() {
+    if [ ! -f "$1" ]; then
+        die "File \"$1\" must exist"
+    fi
+}
+assert_directory_must_exist() {
+    if [ ! -d "$1" ]; then
+        die "Directory \"$1\" must exist"
+    fi
+}
 ################################################################################
 ## SCRIPT'S PROCEDURES
 ################################################################################
