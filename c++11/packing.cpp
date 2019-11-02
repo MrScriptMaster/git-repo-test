@@ -145,11 +145,15 @@ public:
             if (m_File.is_open())
             {
                 m_File.close();
-                m_File.open(sTarget);
             }
+            m_File.open(sTarget);
         }
         else
         {
+            if (m_File.is_open())
+            {
+                m_File.close();
+            }
             m_sStream.clear();
             m_sStream = std::move(std::istringstream(sTarget));
         }
