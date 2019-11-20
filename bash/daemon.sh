@@ -156,6 +156,10 @@ rerun () {
                 if [ -f "${TARGET_FILE}" ]; then
                     if [ -s "${TARGET_FILE}" ]; then
                         _log "Execute program"
+                        #exec 3<> ${OUTPUT}
+                        #cat /dev/null >&3
+                        #${CMD} >&3
+                        #exec 3>&-
                         # Clean file
                         cat /dev/null > "${TARGET_FILE}"
                     else
