@@ -20,7 +20,25 @@ package ButtonsMap; {
         bless $self, $class;
         return $self;
     };
-
+    
+    sub getKeyStroke {
+        my $akey = (join ' ', @_)[0];
+        my @arr = split ' ', $akey;
+        my %keys = @arr;
+        my $stroke = "";
+        my $first = 1;
+        for my $k (keys %keys) {
+            if ($first) {
+                $stroke = %keys{$k};
+                $first = 0;
+            }
+            else {
+                $stroke .= " ".%keys{$k};
+            }
+        }
+        return $stroke;
+    }
+    
     sub cleanup {
         %codes = undef;
         %codes = {};
