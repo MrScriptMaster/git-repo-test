@@ -22,18 +22,20 @@ package ButtonsMap; {
     };
     
     sub getKeyStroke {
-        my $akey = (join ' ', @_)[0];
-        my @arr = split ' ', $akey;
-        my %keys = @arr;
+        my @arr = @_;
         my $stroke = "";
         my $first = 1;
-        for my $k (keys %keys) {
+        #print Dumper @arr;
+        my $counter = 0;
+        for my $k (@arr) {
+            $counter++;
+            next if ($counter % 2 != 0);
             if ($first) {
-                $stroke = %keys{$k};
+                $stroke = $k;
                 $first = 0;
             }
             else {
-                $stroke .= " ".%keys{$k};
+                $stroke .= " ".$k;
             }
         }
         return $stroke;
