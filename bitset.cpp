@@ -3,6 +3,13 @@
 #include <iostream>
 #include <ostream>
 #include <bitset>
+#include <cstdio>
+
+#include <string>
+#include <vector>
+#include <algorithm>
+#include <cassert>
+#include <sstream>
 
 /*
  * Author:  David Robert Nadeau
@@ -167,32 +174,127 @@ unsigned long conv3(const NTPTimeStamp& ts) {
 
 #define COEF 12
 
-int main(int argc, char* argv[]) {
-
+void test_1() {
     NTPTimeStamp t1, t2, t3, t4;
-    //t1.secs = 0xb710;
-    t1.secs = 0xafc8;
-    t2.frac = 0x8000;
-    
+    // 46864.500 (s)
+    t1.secs = 0xb710;
+    t1.frac = 0x8000;
+    // 5.250 (s)
     t2.secs = 0x0005;
     t2.frac = 0x4000;
-
-    //t3.secs = 0xb705;
-    t3.secs = 0x2706;
-    //t3.secs = 0xafc8;
+    // 46853.125 (s)
+    t3.secs = 0xb705;
     t3.frac = 0x2000;
 
+    cout << "TEST_1: Expected value: 6.125 (s) ~ 6 (s)" << endl;
     cout << "BEFORE:\n" << t1 << t2 << t3;
     
     t4 = t1 - t2 - t3;
 
     cout << "AFTER:\n" << t4
-         << "double: " << conv(t4) * 1000 << endl
-         << "double1: " << conv1(t4) * 1000 << endl
-         << "u_long: " << conv2(t4) * 1000 << endl
-         << "u_long1: " << conv3(t4) * 1000 << endl
-         << "test: " << (0UL - 1) << endl
+         << "double: " << conv(t4) * 1000 << " (ms) " << conv(t4) << " (s)" << endl
+         << "double1: " << conv1(t4) * 1000 << " (ms) " << conv1(t4) << " (s)" << endl
+         << "u_long: " << conv2(t4) * 1000 << " (ms) " << conv2(t4) << " (s)" << endl
+         << "u_long1: " << conv3(t4) * 1000 << " (ms) " << conv3(t4) << " (s)" << endl
+         //<< "test: " << (0UL - 1) << endl
         ;
+}
+
+void test_2() {
+    unsigned long long timestamp = 0xb7108000;
+    timestamp <<= 16;
+    cout << "TEST 2" << endl;
+    cout << "(0000000000000000101101110001000010000000000000000000000000000000) : " << bitset<sizeof timestamp * 8>(timestamp) << endl;
+    cout << "SHIFTING" << endl;
+    unsigned long time = (timestamp >> 16);
+    cout << "(10110111000100001000000000000000): " << bitset<sizeof time * 8>(time) << endl;
+    NTPTimeStamp ts1, ts2, ts3, ts4;
+    ts1.secs = (time & 0xFFFF0000) >> 16;
+    ts1.frac = (time & 0x0000FFFF) << 16;
+    
+    ts3 = ts4 = ts1;
+    
+    ts2.secs = time & 0xFFFF0000;
+    ts2.frac = time & 0x0000FFFF;
+
+    ts3.secs &= 0x0000FFFF;
+    ts3.frac &= 0xFFFF0000;
+
+    cout << ts1 
+//       << ts2
+         << ts3
+         << "Test 1: " << bitset<sizeof (unsigned long) * 8>( ((ts4.secs & 0x0000FFFF) << 16) | ((ts4.frac & 0xFFFF0000) >> 16) )
+    ;
+}
+
+class Cbitset {
+protected:
+    size_t m_nSize;
+    std::vector<uint8_t> m_Data;
+public:
+    virtual ~Cbitset() = default;
+    Cbitset(Cbitset &&) = default;
+    Cbitset(const Cbitset &) = default;
+    explicit Cbitset(size_t nBits, uint64_t value)
+    : m_nSize(0)
+    {
+        size_t nBytes = resize(nBits);;
+        std::fill_n(m_Data.begin(), m_Data.size(), 0);
+        if (m_nSize < sizeof(uint64_t)) {
+            assert(nBytes < 3);
+            uint64_t maskedValue = value & ((1 << (m_nSize + 1)) - 1);
+            for (size_t i = 0; i < m_Data.size(); i++) {
+                m_Data[i] = (maskedValue >> (i * 8)) & 0xff;
+            }
+        } else {
+            for (size_t i = 0; i < sizeof(uint64_t); i++) {
+                m_Data[i] = (value >> (i * 8)) & 0xff;
+            }
+        }
+    }
+
+    size_t         bits_num() const { return m_nSize; }
+    size_t         size()           { return m_Data.size(); }
+    const uint8_t* data()     const { return m_Data.data(); }
+    uint8_t*       data()           { return m_Data.data(); }
+
+    size_t resize(size_t nBits) {
+        m_nSize = nBits;
+        size_t nBytes;
+        if (m_nSize < 8) {
+            nBytes = 1;
+        } else {
+            nBytes = 1 + (m_nSize - 1) / 8;
+        }
+        m_Data.resize(nBytes);
+        return nBytes;
+    }
+
+    bool operator[](size_t pos) const {
+        size_t byte = pos / 8, offset = pos % 8;
+        return (m_Data[byte] >> offset) & 0x1;
+    }
+
+    std::string to_string(unsigned int blk = 4) const {
+        std::stringstream ss;
+        bool formatting = (blk > 0 && blk < m_nSize) ? true : false;
+        for (size_t i = 0; i < m_nSize; i++) {
+            ss << ((*this)[m_nSize - i - 1] ? "1" : "0");
+            if (formatting && !((i+1) % blk)) {
+                ss << " ";
+            }
+        }
+        return ss.str();
+    }
+};
+
+int main(int argc, char* argv[]) {
+
+    cout << Cbitset(sizeof(int) * 8, 0xb710).to_string() << endl;
+    //test_1();
+    //test_2();
+    //bitset<sizeof(int) * 8> tt(5);
+    //printf("Test: %s\n", tt.to_string().c_str());
 
     return 0;
 }
