@@ -108,7 +108,7 @@ public:
     unsigned long long to_udec() const {
         unsigned long long mult = 1;
         unsigned long long result = 0;
-        for (size_t i = 0; i < m_nBits - 1; i++) {
+        for (size_t i = 0; i < m_nBits - 2; i++) {
             if ((*this)[i]) {
                 result += mult;
             }
@@ -120,7 +120,7 @@ public:
     unsigned long long to_dec() const {
         unsigned long long mult = 1;
         unsigned long long result = 0;
-        for (size_t i = 0; i < m_nBits - 2; i++) {
+        for (size_t i = 0; i < m_nBits - 1; i++) {
             if ((*this)[i]) {
                 result += mult;
             }
