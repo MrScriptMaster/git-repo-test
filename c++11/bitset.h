@@ -7,9 +7,6 @@
 #include <cassert>
 #include <sstream>
 #include <iomanip>
-#include <cmath>
-
-#include <iostream>
 
 namespace Toolkit {
 
@@ -38,7 +35,6 @@ public:
         size_t nBytes = resize(nBits); // m_nBits updated
         std::fill_n(m_Data.begin(), m_Data.size(), 0);
         if (m_nBits < sizeof(uint64_t)) {
-            std::cout << "aaaa" << std::endl;
             assert(nBytes < 3);
             uint64_t maskedValue = value & ((1 << (m_nBits + 1)) - 1);
             for (size_t i = 0; i < m_Data.size(); i++) {
