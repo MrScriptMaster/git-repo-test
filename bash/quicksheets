@@ -1,0 +1,2 @@
+# Достать первый ip-адрес первого сетевого интерфейса
+ifconfig | grep -E 'inet[[:space:]]+(([[:digit:]]+)\.){3}[[:digit:]]+' -m 1 | sed -r 's/inet.[[:space:]]+?((([[:digit:]]+)\.){3}[[:digit:]]+)[[:space:]]*.*/\1/;s/^[[:space:]]*//'
