@@ -1,2 +1,52 @@
 # Достать первый ip-адрес первого сетевого интерфейса
 ifconfig | grep -E 'inet[[:space:]]+(([[:digit:]]+)\.){3}[[:digit:]]+' -m 1 | sed -r 's/inet.[[:space:]]+?((([[:digit:]]+)\.){3}[[:digit:]]+)[[:space:]]*.*/\1/;s/^[[:space:]]*//'
+
+# переменная для работы содержащая полное имя и путь к файлу
+fullpathname="/root/temp/file.tar.gz"
+ 
+# Получить путь (часть от начала строки до последнего слева слеша)
+$ fullpathname="/root/temp/file.tar.gz"; echo "${fullpathname%/*}"
+/root/temp
+ 
+# Получить имя файла (часть от самого правого слеша до конца строки)
+$ fullpathname="/root/temp/file.tar.gz"; echo "${fullpathname##*/}"
+file.tar.gz
+ 
+# Получить строку левее самой левой точки
+# !!! Если точка будет находиться в пути, то отрежет по ней
+$ fullpathname="/root/temp/file.tar.gz"; echo "${fullpathname%%.*}"
+/root/temp/file
+ 
+# Получить путь и имя файла без расширения (удаляет все правее самой правой точки)
+$ fullpathname="/root/temp/file.tar.gz"; echo "${fullpathname%.*}"
+/root/temp/file.tar
+ 
+# Получить расширение (правая часть от последней слева точки в имени файла)
+$ fullpathname="/root/temp/file.tar.gz"; echo "${fullpathname##*.}"
+gz
+ 
+# Все расширения (правая часть от первой слева точки в имени файла)
+$ fullpathname="/root/temp/file.tar.gz"; echo "${fullpathname#*.}"
+tar.gz
+ 
+# Удаление любого расширения
+$ fullpathname="/root/temp/file.tar.gz"; echo "${fullpathname%.*}"
+/root/temp/file.tar
+ 
+# Удаление расширения .gz
+$ fullpathname="/root/temp/file.tar.gz"; echo "${fullpathname%.gz}"
+/root/temp/file.tar
+ 
+# Замена расширения .gz на .doc
+$ fullpathname="/root/temp/file.tar.gz"; echo "${fullpathname%.gz}.doc"
+/root/temp/file.tar.doc
+
+fullpathname="/root/temp/file.tar.gz"
+              |--------------------|   - fullname
+              ^--------^               - path
+                         ^---------^   - name
+                                  ^^   - extension
+             #>>                       - от начала короткое удаление
+            ##>>>>                     - от начала длинное удаление
+                                  <<%  - от конца короткое удаление
+                                <<<<%% - от конца длинное удаление
