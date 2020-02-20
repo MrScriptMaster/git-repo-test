@@ -1,0 +1,226 @@
+---
+defines:
+  - &pti "D:/sip96x1/app/tool/pti-cli/Debug/pti_tcp.exe"
+  - &ip 192.168.60.115
+test_name: Test H323 UI
+device:
+  IPv4: *ip
+plan:
+  - step: module
+    type: perl
+    params: *pti
+    params_1: *ip
+    preface: |-
+      if ($^O =~ /Win/) {
+        use lib qw(../lib);
+      } else {
+        use lib qw(../../lib);
+      }
+      use PhoneMap;
+      use Toolkit;
+      use Tree;
+      
+      our $shell = undef;
+      our $main_menu = undef;
+      
+      sub Pti ($$)
+      { 
+      	my $pti = shift;
+      	my $ip  = shift;
+      	return sub ($) {
+      		my $stroke = shift;
+      		if (length $stroke) {
+      			system("$pti -i $ip -p 100 -k $stroke");
+          }
+      	};
+      }
+
+      sub through_the_forest($;$)
+      {
+        my $node = shift;
+        my $prefix = shift;
+        if (!defined $prefix) { 
+            $prefix = "";
+        }
+        my $init_prefix = $prefix;
+        for my $leaf ($node->children()) {
+           my $has_leafs = $leaf->children();
+           my $hash = $leaf->value();
+           if (length $prefix) {
+                $hash->{path} = $prefix." ".$hash->{path};
+                $prefix = $hash->{path};
+           }
+           if (defined $hash) {
+               print $hash->{name},": ",$hash->{path},"\n";
+           }
+           if ($has_leafs) {
+               through_the_forest($leaf, $prefix);
+           }
+            $prefix = $init_prefix;
+        }
+      }
+
+      sub through_the_forest_pti($$)
+      {
+          my $node = shift;
+          my $callback = shift;
+          for my $leaf ($node->children())
+          {
+              my $has_leafs = $leaf->children();
+              my $hash = $leaf->value();
+              if (defined $hash) {
+                 &$callback($hash);
+              }
+              if ($has_leafs) {
+                 through_the_forest_pti($leaf, $callback);
+              }
+          }
+      }
+      
+      sub init_menu
+      {
+        my $map = PhoneMap->new();
+        $main_menu = Tree->new(
+        {   
+            name => "main", 
+            path => ($map->settings())[1],
+            is_menu => 1,
+            is_option => 0,
+        });
+        my $optAndSets = Tree->new(
+            {   
+                name => 'options_and_settings',
+                path => ($map->ok())[1],
+                is_menu => 1,
+                is_option => 0,
+            });
+        my $application_settings = Tree->new(
+            {
+                name => 'app_settings',
+                path => PhoneMap::getKeyStroke($map->down(),$map->ok()),
+                is_menu => 1,
+                is_option => 0,
+            });
+        my $advanced = Tree->new(
+            {
+                name => 'advanced_options',
+                path => PhoneMap::getKeyStroke($map->down(),$map->down(),$map->down(),$map->ok()),
+                is_menu => 1,
+                is_option => 0,
+            });
+        my $call_settings = Tree->new(
+            {
+                name => 'call_settings',
+                path => ($map->ok())[1],
+                is_menu => 1,
+                is_option => 0,
+            });
+        $call_settings->add_child(Tree->new(
+            {
+                name => 'headset_signaling',
+                path => PhoneMap::getKeyStroke($map->down(),$map->down(),$map->down(),$map->down(),$map->down(),
+                                               $map->down(),$map->down(),$map->down(),$map->down(),$map->ok()),
+                is_menu => 1,
+                is_option => 0,
+            }));    
+        $optAndSets->add_child($call_settings);
+        $optAndSets->add_child($application_settings);
+        $optAndSets->add_child(Tree->new(
+            {
+                name => 'screen_and_sound',
+                path => PhoneMap::getKeyStroke($map->down(),$map->down(),$map->ok()),
+                is_menu => 1,
+                is_option => 0,
+            }));
+        $optAndSets->add_child($advanced);
+        $advanced->add_child(Tree->new(
+            {
+                name => 'backup_and_restore',
+                path => ($map->ok())[1],
+                is_menu => 1,
+                is_option => 0,
+            }));
+        $advanced->add_child(Tree->new(
+            {
+                name => 'autogain_control',
+                path => PhoneMap::getKeyStroke($map->down(),$map->ok()),
+                is_menu => 1,
+                is_option => 0,
+            }));
+        $advanced->add_child(Tree->new(
+            {
+                name => 'handset_equalization',
+                path => PhoneMap::getKeyStroke($map->down(),$map->down(),$map->ok()),
+                is_menu => 1,
+                is_option => 0,
+            }));
+        $advanced->add_child(Tree->new(
+            {
+                name => 'acoustic_protection',
+                path => PhoneMap::getKeyStroke($map->down(),$map->down(),$map->down(),$map->ok()),
+                is_menu => 1,
+                is_option => 0,
+            }));
+        $main_menu->add_child($optAndSets);
+        $main_menu->add_child(Tree->new(
+            {
+                name => 'browser',
+                path => PhoneMap::getKeyStroke($map->down(),$map->ok()),
+                is_menu => 1,
+                is_option => 0,
+            }));
+        $main_menu->add_child(Tree->new(
+            {
+                name => 'ntwk_information',
+                path => PhoneMap::getKeyStroke($map->down(),$map->down(),$map->ok()),
+                is_menu => 1,
+                is_option => 0,
+            }));
+        $main_menu->add_child(Tree->new(
+            {
+                name => 'lg_out',
+                path => PhoneMap::getKeyStroke($map->down(),$map->down(),$map->down(),$map->ok()),
+                is_menu => 1,
+                is_option => 0,
+            }));
+        $main_menu->add_child(Tree->new(
+            {
+                name => 'about',
+                path => PhoneMap::getKeyStroke($map->down(),$map->down(),$map->down(),$map->down(),$map->ok()),
+                is_menu => 1,
+                is_option => 0,
+            }));
+        $map = undef;
+        my $first = $main_menu->value();
+        through_the_forest($main_menu, $first->{path});
+      }
+      init_menu();
+    code: |
+      {
+        my($argv) = @_;
+        my($pti,$ip,$pc);
+        $pc = 0;
+        for my $p (@$argv) {
+          $pti   = $p      if $pc == 0;
+          $ip    = $p      if $pc == 1;
+          $pc++;
+        }
+        my $map = PhoneMap->new();
+        $shell = Pti($pti, $ip);
+        #
+        # Go to all famous menus
+        #
+        through_the_forest_pti($main_menu,
+            sub {
+                my $hash = shift;
+                $shell->($hash->{path}) if ($hash->{is_menu});
+            }
+        );
+        $shell->(($map->home())[1]);
+        $map = undef;
+      }
+  - step: if_exist_and_not_empty
+    file: $mtoken/$mtoken.txt
+    action: force
+  - step: timeout
+    time_s: 2
