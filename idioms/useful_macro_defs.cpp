@@ -69,11 +69,19 @@ public:\
 #define __VA_ARGS__ -1//__macro_make_string("__VA_ARGS__ is not supported")
 #endif
 
+#ifndef __STDC_IEC_559__
+#define __STDC_IEC_559__ -1
+#endif
+
+#ifndef __STDC_IEC_559_COMPLEX__
+#define __STDC_IEC_559_COMPLEX__ -1
+#endif
+
+// Макросы для формирования перечислений 
 #ifndef delimiter 
     #define delimiter , 
 #endif 
  
-// Макросы для формирования перечислений 
 #ifndef enumeration_begin 
     #define enumeration_begin(arg) enum arg { 
 #endif 
@@ -118,6 +126,50 @@ void function() {
     cout << "COUNTER IS " << __COUNTER__ << endl;
 }
 
+void demo_macro_enums() {
+    enumeration_begin(color) 
+    declare_member(RED = 0) delimiter 
+    declare_member(GREEN) delimiter 
+    declare_member(BLUE) delimiter 
+    declare_member(COUNTER)
+    enumeration_end;
+    for (int i = 0; i < color::COUNTER; i++) {
+        switch (i)
+        {
+            case color::RED:
+                std::cout << "red" << std::endl;
+                break;
+            case color::GREEN:
+                std::cout << "green" << std::endl;
+                break;
+            case color::BLUE:
+                std::cout << "blue" << std::endl;
+                break;
+            default:
+                break;
+        }
+    }
+
+    // Создание строк
+    #undef enumeration_begin 
+    #undef declare_member
+    
+    #define list(arg) arg##_strs
+    #define enumeration_begin(arg) const char* const list(arg)[]={ 
+    #define declare_member(arg) #arg 
+    #define SizeOf(arg) sizeof arg##_strs / sizeof *arg##_strs
+
+    enumeration_begin(colors)
+    declare_member("Red") delimiter
+    declare_member("Green") delimiter
+    declare_member("Blue") delimiter
+    enumeration_end;
+
+    for (int i = 0; i < SizeOf(colors); i++) {
+        std::cout << "Color: " << list(colors)[i] << std::endl;
+    }
+}
+
 int main(int argc, char* argv[])
 {
     assert("Macro test");
@@ -147,5 +199,6 @@ int main(int argc, char* argv[])
          ;
     
     function();
+    demo_macro_enums();
     return 0;
 }
