@@ -1,9 +1,4 @@
 #!/bin/bash
-################################################################################
-##                                                                            ##
-## Copyright (C) 2020 Avaya Inc.                                              ##
-##                                                                            ##
-################################################################################
 # Script version: 2.0                                                          #
 # Description:                                                                 #
 #   This script controls the procedure for applying and rolling back patches   #
