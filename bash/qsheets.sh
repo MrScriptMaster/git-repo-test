@@ -105,6 +105,50 @@ There is NO WARRANTY, to the extent permitted by law."
         esac
     done
 }
+
+## args:
+##  $1  character
+##  $2  length
+function draw_hline() {
+    local c=${1}
+    local l=${2}
+    local line
+    printf -v line '%*s' $l
+    line=${line// /$c}
+    echo "$line"
+}
+
+## args:
+##  $1  field's length
+##  $2  text
+##  $3  aligning
+##    --right (default)
+##    --left
+##    --center
+function draw_field() {
+    [[ $# -ge "2" ]] || return 1
+    if [[ ${#2} < $1 ]]; then printf "$2"; return 0; fi
+    local align=${3:--right}
+    local length="$1"
+    local f
+    case "$align" in
+        --right)
+            f='%*s'
+            printf $f $length "$2"
+            ;;
+        --left)
+            f='%-*s'
+            printf $f $length "$2"
+            ;;
+        --center)
+            f='%*s'
+            local col=$(( ($length + ${#2}) / 2))
+            printf $f $col "$2"
+            ;;
+        *)  ;;
+    esac
+    return 0
+}
 ################################################################################
 
 # Trimmer
