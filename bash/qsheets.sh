@@ -127,7 +127,6 @@ function draw_hline() {
 ##    --center
 function draw_field() {
     [[ $# -ge "2" ]] || return 1
-    if [[ ${#2} < $1 ]]; then printf "$2"; return 0; fi
     local align=${3}
     if [[ ${#align} == 0 ]]; then align='--right'; fi
     local length="$1"
