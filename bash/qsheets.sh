@@ -145,6 +145,7 @@ function draw_field() {
             f='%*s'
             local col=$(( ($length + ${#2}) / 2))
             printf $f $col "$2"
+	    printf $f $(( $length - $col ))
             ;;
         *)  ;;
     esac
