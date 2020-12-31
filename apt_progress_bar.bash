@@ -77,18 +77,18 @@ function gpb_clear_progress_bar() {
 }
 
 function gpb_print_bar_text() {
-  local percentage=$1
-  local cols=$(tput cols)
-  let bar_size=$cols-17
-  local color="${GPB_COLOR_FG}${GPB_COLOR_BG}"
-  if [[ "$GPB_IS_PROGRESS_BLOCKED" == "true" ]]; then
-      color="${GPB_COLOR_FG}${GPB_COLOR_BG_BLOCKED}"
-  fi
-	let complete_size=($bar_size*$percentage)/100
+	local percentage=$1
+  	local cols=$(tput cols)
+  	let bar_size=$cols-17
+  	local color="${GPB_COLOR_FG}${GPB_COLOR_BG}"
+ 	if [[ "$GPB_IS_PROGRESS_BLOCKED" == "true" ]]; then
+  		color="${GPB_COLOR_FG}${GPB_COLOR_BG_BLOCKED}"
+ 	fi
+  	let complete_size=($bar_size*$percentage)/100
 	let remainder_size=$bar_size-$complete_size
-  local progress_bar=$(${ECHO} -ne "["; ${ECHO} -en "${color}"; gpb_printf_new "#" $complete_size; \
-      ${ECHO} -en "${GPB_RESTORE_FG}${GPB_RESTORE_BG}"; gpb_printf_new "." $remainder_size; ${ECHO} -ne "]");
-  ${ECHO} -ne " Progress ${percentage}% ${progress_bar}"
+ 	local progress_bar=$(${ECHO} -ne "["; ${ECHO} -en "${color}"; gpb_printf_new "#" $complete_size; \
+		${ECHO} -en "${GPB_RESTORE_FG}${GPB_RESTORE_BG}"; gpb_printf_new "." $remainder_size; ${ECHO} -ne "]");
+	${ECHO} -ne " Progress ${percentage}% ${progress_bar}"
 }
 
 function gpb_enable_trapping() {
